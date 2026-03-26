@@ -80,7 +80,7 @@ export const InterviewResultPage = () => {
                   <p className="text-xs font-medium text-gray-500 mb-1">AI feedback</p>
                   <p className="text-sm text-gray-700">{a.evaluation.feedback}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="text-xs font-medium text-green-600 mb-1">Strengths</p>
                     {a.evaluation.strengths.map((s, j) => (

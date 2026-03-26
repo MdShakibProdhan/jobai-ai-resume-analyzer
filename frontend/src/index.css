@@ -43,8 +43,13 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
   margin: 0 auto 16px !important;
   border-radius: 4px !important;
-  padding: 40px 50px !important;
+  padding: 20px 16px !important;
   width: 100% !important;
   max-width: 100% !important;
   min-height: auto !important;
+}
+@media (min-width: 640px) {
+  .docx-preview-container .docx-wrapper > section.docx {
+    padding: 40px 50px !important;
+  }
 }

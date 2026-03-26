@@ -40,7 +40,7 @@ export const DashboardPage = () => {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={Briefcase}  label="Job posts saved"  value={jobs.length}    color="bg-brand-600"   to="/jobs" />
         <StatCard icon={FileText}   label="Resumes uploaded" value={resumes.length} color="bg-violet-500"  to="/resume" />
         <StatCard icon={BarChart2}  label="Analyses run"     value={0}              color="bg-emerald-500" to="/analyze" />

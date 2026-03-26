@@ -67,7 +67,7 @@ export const JobsPage = () => {
       <PageHeader title="Add job post" subtitle="Paste the job description manually." />
       <Card className="max-w-2xl">
         <form onSubmit={manualForm.handleSubmit(d => createMutation.mutate(d))} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Job title"
               placeholder="Software Engineer"

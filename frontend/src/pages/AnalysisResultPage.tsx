@@ -99,22 +99,24 @@ export const AnalysisResultPage = () => {
         title="ATS Analysis Report"
         subtitle={new Date(analysis.createdAt).toLocaleString()}
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="secondary"
+              size="sm"
               onClick={openPreview}
             >
               <Eye size={14} /> View report
             </Button>
             <Button
               variant="secondary"
+              size="sm"
               loading={reportMutation.isPending}
               onClick={() => reportMutation.mutate()}
             >
-              <Download size={14} /> Download report
+              <Download size={14} /> Download
             </Button>
-            <Button onClick={() => navigate(`/interview/${id}`)}>
-              <Mic size={14} /> Mock interview
+            <Button size="sm" onClick={() => navigate(`/interview/${id}`)}>
+              <Mic size={14} /> Interview
             </Button>
           </div>
         }
@@ -130,7 +132,7 @@ export const AnalysisResultPage = () => {
         <h2 className="font-bold text-gray-900 mb-5 flex items-center gap-2">
           <Target size={16} className="text-brand-600" /> Overall scores at a glance
         </h2>
-        <div className="flex gap-8 mb-6">
+        <div className="flex flex-wrap gap-6 sm:gap-8 mb-6">
           <div className="text-center">
             <ScoreRing score={analysis.atsScore} size={96} label="ATS score" />
             <p className="text-xs mt-1" style={{ color: scoreColor(analysis.atsScore) }}>{scoreLabel(analysis.atsScore)}</p>
@@ -165,12 +167,12 @@ export const AnalysisResultPage = () => {
                     onClick={() => setOpenCat(isOpen ? null : key)}
                   >
                     {/* Row 1: label + match count + chevron */}
-                    <div className="flex items-center gap-2.5 mb-2">
+                    <div className="flex items-center gap-2 sm:gap-2.5 mb-2 flex-wrap">
                       <span className="text-base">{icon}</span>
-                      <span className="flex-1 text-sm font-medium text-gray-800">{label}</span>
-                      <span className="text-xs font-semibold text-green-600">{detail.matched} matched</span>
-                      <span className="text-xs text-gray-300">|</span>
-                      <span className="text-xs font-semibold text-red-500">{detail.total - detail.matched} lacking</span>
+                      <span className="flex-1 text-xs sm:text-sm font-medium text-gray-800 min-w-[100px]">{label}</span>
+                      <span className="text-[10px] sm:text-xs font-semibold text-green-600">{detail.matched} matched</span>
+                      <span className="text-[10px] sm:text-xs text-gray-300 hidden sm:inline">|</span>
+                      <span className="text-[10px] sm:text-xs font-semibold text-red-500">{detail.total - detail.matched} lacking</span>
                       {isOpen
                         ? <ChevronUp size={14} className="text-gray-400 shrink-0 ml-1" />
                         : <ChevronDown size={14} className="text-gray-400 shrink-0 ml-1" />
@@ -347,7 +349,7 @@ export const AnalysisResultPage = () => {
                 }
               </button>
               {openStep === i && (
-                <div className="px-16 pb-4 space-y-2">
+                <div className="px-4 sm:px-16 pb-4 space-y-2">
                   <p className="text-sm text-gray-600 mb-3">{step.description}</p>
                   <ul className="space-y-1.5">
                     {(step.items || []).map((item, j) => (
@@ -369,7 +371,7 @@ export const AnalysisResultPage = () => {
           <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
             <Target size={16} className="text-brand-600" /> Projected scores after improvements
           </h2>
-          <div className="flex gap-8 mb-4">
+          <div className="flex flex-wrap gap-6 sm:gap-8 mb-4">
             <div className="text-center">
               <ScoreRing score={analysis.projectedScores.atsScore} size={88} label="ATS projected" />
             </div>
@@ -429,22 +431,23 @@ export const AnalysisResultPage = () => {
 
       {/* Download report banner */}
       <Card className="border-blue-100 bg-blue-50">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="font-semibold text-blue-900">Download full ATS report</h3>
             <p className="text-sm text-blue-700 mt-0.5">
-              Get the complete report as a formatted Word document — exactly like your previous ATS report.
+              Get the complete report as a formatted Word document.
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={openPreview}>
+          <div className="flex gap-2 shrink-0">
+            <Button variant="secondary" size="sm" onClick={openPreview}>
               <Eye size={14} /> View
             </Button>
             <Button
+              size="sm"
               loading={reportMutation.isPending}
               onClick={() => reportMutation.mutate()}
             >
-              <Download size={14} /> Download .docx
+              <Download size={14} /> Download
             </Button>
           </div>
         </div>
@@ -452,21 +455,21 @@ export const AnalysisResultPage = () => {
 
       {/* Generate improved CV */}
       <Card className="border-brand-100 bg-brand-50">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="font-semibold text-brand-900">Generate ATS-optimized CV</h3>
             <p className="text-sm text-brand-700 mt-0.5">
-              AI rewrites your resume tailored to this job — copy or download it.
+              AI rewrites your resume tailored to this job.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             {improvedCV && (
-              <Button variant="secondary" onClick={() => setShowImprovedCV(true)}>
+              <Button variant="secondary" size="sm" onClick={() => setShowImprovedCV(true)}>
                 <Eye size={14} /> View
               </Button>
             )}
-            <Button loading={cvMutation.isPending} onClick={() => cvMutation.mutate()}>
-              <Sparkles size={14} /> {improvedCV ? 'Regenerate' : 'Generate improved CV'}
+            <Button size="sm" loading={cvMutation.isPending} onClick={() => cvMutation.mutate()}>
+              <Sparkles size={14} /> {improvedCV ? 'Regenerate' : 'Generate CV'}
             </Button>
           </div>
         </div>
@@ -489,7 +492,7 @@ export const AnalysisResultPage = () => {
 
             {/* Formatted CV body */}
             <div className="overflow-y-auto flex-1 min-h-0 p-6">
-              <div id="cv-preview" className="bg-white shadow-lg rounded-lg mx-auto max-w-2xl" style={{ padding: '48px 52px', fontFamily: 'Georgia, serif' }}>
+              <div id="cv-preview" className="bg-white shadow-lg rounded-lg mx-auto max-w-2xl px-4 py-6 sm:px-[52px] sm:py-[48px]" style={{ fontFamily: 'Georgia, serif' }}>
                 {typeof improvedCV === 'object' && improvedCV.name ? (
                   <>
                     {/* Name + title + contact */}
@@ -685,7 +688,7 @@ export const AnalysisResultPage = () => {
       )}
 
       {/* Mock interview CTA */}
-      <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+      <div className="p-4 sm:p-6 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="font-semibold text-gray-900">Ready to practice?</h3>
           <p className="text-sm text-gray-500 mt-0.5">Start an AI mock interview tailored to this exact job.</p>

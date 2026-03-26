@@ -145,12 +145,12 @@ export const ScoreRing = ({ score, size = 96, label }: { score: number; size?: n
 
 // ── PageHeader ────────────────────────────────────────────
 export const PageHeader = ({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) => (
-  <div className="flex items-start justify-between mb-8">
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6 sm:mb-8">
+    <div className="min-w-0">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{title}</h1>
       {subtitle && <p className="text-gray-500 mt-1 text-sm">{subtitle}</p>}
     </div>
-    {action && <div>{action}</div>}
+    {action && <div className="shrink-0">{action}</div>}
   </div>
 );
 

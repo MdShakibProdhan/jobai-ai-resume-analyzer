@@ -281,7 +281,7 @@ export const InterviewPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <Card>
           <div className="flex items-center gap-1.5 mb-3">
             <CheckCircle2 size={14} className="text-green-500" />
