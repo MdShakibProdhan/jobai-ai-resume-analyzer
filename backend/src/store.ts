@@ -1,12 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-// In serverless (Netlify Functions), use /tmp for writable storage
-const isServerless = !!process.env.NETLIFY || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-const dataDir = isServerless
-  ? '/tmp/jobai-data'
-  : path.join(__dirname, '../data');
-
+const dataDir = path.join(__dirname, '../data');
 const DB_FILE = path.join(dataDir, 'db.json');
 
 // Make sure data folder exists

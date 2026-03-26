@@ -19,20 +19,8 @@ const app = express();
 // Security
 app.use(helmet());
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  // Netlify deploy previews & production
-].filter(Boolean);
-
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Netlify functions)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.some(o => origin.startsWith(o!))) return callback(null, true);
-    // Allow any netlify.app subdomain
-    if (origin.endsWith('.netlify.app')) return callback(null, true);
-    callback(null, true); // permissive for now
-  },
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }));
 

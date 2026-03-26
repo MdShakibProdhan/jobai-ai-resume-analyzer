@@ -15,9 +15,5 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
-  },
-  "dependencies": {
-    "@netlify/functions": "^5.1.4",
-    "serverless-http": "^4.0.0"
   }
 }
