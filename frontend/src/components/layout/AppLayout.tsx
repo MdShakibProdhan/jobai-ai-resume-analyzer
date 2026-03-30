@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Briefcase, FileText, BarChart2,
-  Mic, Type, LogOut, Sparkles, Menu, X
+  Mic, Type, FileEdit, LogOut, Sparkles, Menu, X
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/lib/api';
@@ -14,6 +14,7 @@ const NAV = [
   { to: '/resume',    label: 'My resume',   icon: FileText },
   { to: '/analyze',   label: 'Analyze',     icon: BarChart2 },
   { to: '/interview', label: 'Mock interview', icon: Mic },
+  { to: '/cv-builder',  label: 'CV Builder',   icon: FileEdit },
   { to: '/paraphraser', label: 'Paraphraser', icon: Type },
 ];
 

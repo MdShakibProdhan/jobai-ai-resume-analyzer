@@ -13,6 +13,8 @@ import { InterviewSetupPage } from '@/pages/InterviewSetupPage';
 import { InterviewPage } from '@/pages/InterviewPage';
 import { InterviewResultPage } from '@/pages/InterviewResultPage';
 import { ParaphraserPage } from '@/pages/ParaphraserPage';
+import { CVBuilderPage } from '@/pages/CVBuilderPage';
+import { CVEditorPage } from '@/pages/CVEditorPage';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -43,6 +45,8 @@ export default function App() {
         <Route path="/interview/:id" element={<InterviewPage />} />
         <Route path="/interview/:id/result" element={<InterviewResultPage />} />
         <Route path="/paraphraser" element={<ParaphraserPage />} />
+        <Route path="/cv-builder" element={<CVBuilderPage />} />
+        <Route path="/cv-editor/:id" element={<CVEditorPage />} />
       </Route>
     </Routes>
   );
