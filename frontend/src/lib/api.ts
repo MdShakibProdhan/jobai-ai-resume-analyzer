@@ -57,6 +57,13 @@ export const resumeApi = {
     });
   },
   delete: (id: string) => api.delete(`/resume/${id}`),
+  parse: (file: File) => {
+    const fd = new FormData();
+    fd.append('resume', file);
+    return api.post('/resume/parse', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 // Analysis

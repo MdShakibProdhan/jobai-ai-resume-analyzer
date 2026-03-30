@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { uploadResume, getResumes, deleteResume } from '../controllers/resumeController';
+import { uploadResume, getResumes, deleteResume, parseCV } from '../controllers/resumeController';
 import { authenticate } from '../middleware/authenticate';
 
 export const resumeRouter = Router();
@@ -23,4 +23,5 @@ resumeRouter.use(authenticate);
 
 resumeRouter.get('/', getResumes);
 resumeRouter.post('/upload', upload.single('resume'), uploadResume);
+resumeRouter.post('/parse', upload.single('resume'), parseCV);
 resumeRouter.delete('/:id', deleteResume);

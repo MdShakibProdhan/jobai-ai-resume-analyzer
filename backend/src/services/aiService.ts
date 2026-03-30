@@ -11,7 +11,7 @@ const getModel = (temp = 0.1) => genAI.getGenerativeModel({
   } as any,
 });
 
-const askGemini = async (prompt: string, temp = 0.1): Promise<any> => {
+export const askGemini = async (prompt: string, temp = 0.1): Promise<any> => {
   const model = getModel(temp);
   const result = await model.generateContent(prompt);
   const text = result.response.text();

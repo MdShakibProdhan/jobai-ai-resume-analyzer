@@ -51,28 +51,121 @@ export const CVEditorPage = () => {
   const handleUploadCV = async (file: File) => {
     setUploading(true);
     try {
-      const res = await resumeApi.upload(file);
-      const text: string = res.data.resume?.text || '';
-      if (!text) { toast.error('Could not parse CV'); setUploading(false); return; }
+      const res = await resumeApi.parse(file);
+      const d = res.data;
+      if (!d || (!d.firstName && !d.email)) {
+        toast.error('Could not parse CV');
+        setUploading(false);
+        return;
+      }
 
-      // Simple text parsing to populate fields
-      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-      if (lines.length > 0) {
-        const nameParts = lines[0].split(' ');
-        store.updatePersonal({
-          firstName: nameParts[0] || '',
-          lastName: nameParts.slice(1).join(' ') || '',
-        });
+      // Populate personal info
+      store.updatePersonal({
+        firstName: d.firstName || '',
+        lastName: d.lastName || '',
+        title: d.title || '',
+        email: d.email || '',
+        phone: d.phone || '',
+        location: d.location || '',
+        website: d.website || '',
+        linkedin: d.linkedin || '',
+        github: d.github || '',
+      });
+
+      // Summary
+      if (d.summary) store.updateSummary(d.summary);
+
+      // Experience
+      if (Array.isArray(d.experience)) {
+        for (const e of d.experience) {
+          store.addExperience();
+          const expList = store.cvs[id!]?.experience;
+          const last = expList?.[expList.length - 1];
+          if (last) {
+            store.updateExperience(last.id, {
+              role: e.role || '', company: e.company || '', location: e.location || '',
+              startDate: e.startDate || '', endDate: e.endDate || '', current: e.current || false,
+              description: Array.isArray(e.description) ? e.description : [],
+            });
+          }
+        }
       }
-      // Find email and phone
-      for (const line of lines) {
-        const emailMatch = line.match(/[\w.-]+@[\w.-]+\.\w+/);
-        if (emailMatch) store.updatePersonal({ email: emailMatch[0] });
-        const phoneMatch = line.match(/[\+]?[\d\s\-().]{7,}/);
-        if (phoneMatch) store.updatePersonal({ phone: phoneMatch[0].trim() });
+
+      // Education
+      if (Array.isArray(d.education)) {
+        for (const e of d.education) {
+          store.addEducation();
+          const eduList = store.cvs[id!]?.education;
+          const last = eduList?.[eduList.length - 1];
+          if (last) {
+            store.updateEducation(last.id, {
+              degree: e.degree || '', institution: e.institution || '', location: e.location || '',
+              startDate: e.startDate || '', endDate: e.endDate || '', gpa: e.gpa || '',
+              description: Array.isArray(e.description) ? e.description : [],
+            });
+          }
+        }
       }
-      toast.success('CV uploaded! Edit the sections to refine.');
-    } catch { toast.error('Upload failed'); }
+
+      // Skills
+      if (Array.isArray(d.skills)) {
+        for (const sk of d.skills) {
+          store.addSkillCategory();
+          const skList = store.cvs[id!]?.skills;
+          const last = skList?.[skList.length - 1];
+          if (last) store.updateSkillCategory(last.id, { category: sk.category || '', skills: sk.skills || '' });
+        }
+      }
+
+      // Projects
+      if (Array.isArray(d.projects)) {
+        for (const p of d.projects) {
+          store.addProject();
+          const pList = store.cvs[id!]?.projects;
+          const last = pList?.[pList.length - 1];
+          if (last) store.updateProject(last.id, {
+            name: p.name || '', subtitle: p.subtitle || '', url: p.url || '',
+            description: Array.isArray(p.description) ? p.description : [],
+          });
+        }
+      }
+
+      // Languages
+      if (Array.isArray(d.languages)) {
+        for (const l of d.languages) {
+          store.addLanguage();
+          const lList = store.cvs[id!]?.languages;
+          const last = lList?.[lList.length - 1];
+          if (last) store.updateLanguage(last.id, { language: l.language || '', proficiency: l.proficiency || 'Intermediate' });
+        }
+      }
+
+      // Certifications
+      if (Array.isArray(d.certifications)) {
+        for (const c of d.certifications) {
+          store.addCertification();
+          const cList = store.cvs[id!]?.certifications;
+          const last = cList?.[cList.length - 1];
+          if (last) store.updateCertification(last.id, { name: c.name || '', issuer: c.issuer || '', date: c.date || '' });
+        }
+      }
+
+      // Enable sections that have data
+      const cv = store.cvs[id!];
+      if (cv) {
+        for (const sec of cv.sections) {
+          const hasData =
+            (sec.type === 'languages' && cv.languages.length > 0) ||
+            (sec.type === 'certifications' && cv.certifications.length > 0);
+          if (hasData && !sec.visible) store.toggleSection(sec.id);
+        }
+      }
+
+      toast.success('CV imported! Review and edit the sections.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Upload failed');
+    }
     setUploading(false);
   };
 
