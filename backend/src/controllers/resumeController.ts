@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import { resumeStore, analysisStore, saveData } from '../store';
-import { askGemini } from '../services/aiService';
 
 export const uploadResume = async (req: Request, res: Response) => {
   try {
@@ -72,7 +71,7 @@ export const deleteResume = async (req: Request, res: Response) => {
   res.json({ message: 'Deleted' });
 };
 
-// Parse an uploaded CV file into structured JSON for the CV builder
+// Extract raw text from an uploaded CV file
 export const parseCV = async (req: Request, res: Response) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
@@ -88,40 +87,11 @@ export const parseCV = async (req: Request, res: Response) => {
       text = result.value;
     }
 
-    if (!text || text.length < 20) {
+    if (!text || text.length < 10) {
       return res.status(400).json({ message: 'Could not extract text from file' });
     }
 
-    const prompt = `Parse the following CV/resume text into structured JSON. Return ONLY valid JSON, no markdown fences.
-
-{
-  "firstName": "",
-  "lastName": "",
-  "title": "",
-  "email": "",
-  "phone": "",
-  "location": "",
-  "website": "",
-  "linkedin": "",
-  "github": "",
-  "summary": "",
-  "experience": [{"role":"","company":"","location":"","startDate":"","endDate":"","current":false,"description":["bullet1"]}],
-  "education": [{"degree":"","institution":"","location":"","startDate":"","endDate":"","gpa":"","description":[]}],
-  "skills": [{"category":"Category Name","skills":"skill1, skill2, skill3"}],
-  "projects": [{"name":"","subtitle":"","url":"","description":["bullet1"]}],
-  "languages": [{"language":"","proficiency":"Native|Fluent|Advanced|Intermediate|Basic"}],
-  "certifications": [{"name":"","issuer":"","date":""}]
-}
-
-CV Text:
-${text.slice(0, 6000)}`;
-
-    const raw = await askGemini(prompt, 0);
-    // Clean the response — remove markdown fences if present
-    const cleaned = raw.replace(/```json?\n?/g, '').replace(/```\n?/g, '').trim();
-    const parsed = JSON.parse(cleaned);
-
-    res.json(parsed);
+    res.json({ text });
   } catch (err: any) {
     console.error('parseCV error:', err);
     res.status(500).json({ message: 'Failed to parse CV' });

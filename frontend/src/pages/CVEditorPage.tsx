@@ -52,111 +52,196 @@ export const CVEditorPage = () => {
     setUploading(true);
     try {
       const res = await resumeApi.parse(file);
-      const d = res.data;
-      if (!d || typeof d !== 'object') {
-        toast.error('Could not parse CV');
-        setUploading(false);
-        return;
-      }
+      const text: string = res.data?.text || '';
+      if (!text) { toast.error('Could not extract text'); setUploading(false); return; }
 
-      // Populate personal info
+      // ── Parse text into sections using pattern matching ──
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+      // Extract contact info from anywhere in text
+      const emailMatch = text.match(/[\w.+-]+@[\w.-]+\.\w+/);
+      const phoneMatch = text.match(/[\+]?[\d][\d\s\-().]{6,}\d/);
+      const linkedinMatch = text.match(/linkedin\.com\/in\/[\w-]+/i);
+      const githubMatch = text.match(/github\.com\/[\w-]+/i);
+      const websiteMatch = text.match(/(?:https?:\/\/)?(?:www\.)?(?!linkedin|github)[\w-]+\.[\w.]+\/?\S*/i);
+
+      // First non-empty line is usually the name
+      const nameLine = lines[0] || '';
+      const nameParts = nameLine.replace(/[,|•·].*/, '').trim().split(/\s+/);
+
       store.updatePersonal({
-        firstName: d.firstName || '',
-        lastName: d.lastName || '',
-        title: d.title || '',
-        email: d.email || '',
-        phone: d.phone || '',
-        location: d.location || '',
-        website: d.website || '',
-        linkedin: d.linkedin || '',
-        github: d.github || '',
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: emailMatch?.[0] || '',
+        phone: phoneMatch?.[0]?.trim() || '',
+        linkedin: linkedinMatch?.[0] || '',
+        github: githubMatch?.[0] || '',
+        website: websiteMatch?.[0] || '',
       });
 
-      // Summary
-      if (d.summary) store.updateSummary(d.summary);
+      // Split text into sections by common headings
+      const sectionHeaders = /^(professional\s*summary|summary|profile|about\s*me|objective|work\s*experience|experience|employment|education|academic|skills|technical\s*skills|core\s*competencies|projects|personal\s*projects|languages|certifications|certificates|awards|honors|publications|references|interests|hobbies|volunteer|additional)/i;
 
-      // Experience
-      if (Array.isArray(d.experience)) {
-        for (const e of d.experience) {
-          store.addExperience();
-          const expList = store.cvs[id!]?.experience;
-          const last = expList?.[expList.length - 1];
-          if (last) {
+      const sections: { title: string; content: string[] }[] = [];
+      let current: { title: string; content: string[] } | null = null;
+
+      for (const line of lines.slice(1)) { // skip name line
+        if (sectionHeaders.test(line) && line.length < 50) {
+          if (current) sections.push(current);
+          current = { title: line, content: [] };
+        } else if (current) {
+          current.content.push(line);
+        }
+      }
+      if (current) sections.push(current);
+
+      // Helper to check section type
+      const isType = (title: string, ...keywords: string[]) =>
+        keywords.some(k => title.toLowerCase().includes(k));
+
+      const datePattern = /(\w{3,9}\s+\d{4}|\d{4})\s*[-–—to]+\s*(\w{3,9}\s+\d{4}|\d{4}|present|current)/i;
+
+      for (const sec of sections) {
+        const title = sec.title;
+        const content = sec.content;
+
+        if (isType(title, 'summary', 'profile', 'about', 'objective')) {
+          store.updateSummary(content.join(' '));
+        }
+        else if (isType(title, 'experience', 'employment', 'work')) {
+          // Group lines into entries (each entry usually starts with a role/company line with a date)
+          let entryLines: string[][] = [];
+          let buf: string[] = [];
+          for (const line of content) {
+            if (datePattern.test(line) && buf.length > 0) {
+              entryLines.push(buf);
+              buf = [];
+            }
+            buf.push(line);
+          }
+          if (buf.length) entryLines.push(buf);
+
+          for (const entry of entryLines) {
+            store.addExperience();
+            const expList = store.cvs[id!]?.experience;
+            const last = expList?.[expList.length - 1];
+            if (!last) continue;
+
+            const dateLine = entry.find(l => datePattern.test(l)) || '';
+            const dm = dateLine.match(datePattern);
+            const bullets = entry.filter(l => /^[•\-–▪■*►◆]/.test(l) || /^\d+[.)]\s/.test(l)).map(l => l.replace(/^[•\-–▪■*►◆\d.)]+\s*/, ''));
+            const nonBullets = entry.filter(l => !bullets.includes(l) && l !== dateLine);
+
             store.updateExperience(last.id, {
-              role: e.role || '', company: e.company || '', location: e.location || '',
-              startDate: e.startDate || '', endDate: e.endDate || '', current: e.current || false,
-              description: Array.isArray(e.description) ? e.description : [],
+              role: nonBullets[0]?.replace(datePattern, '').trim() || '',
+              company: nonBullets[1]?.replace(datePattern, '').trim() || '',
+              startDate: dm?.[1] || '',
+              endDate: /present|current/i.test(dm?.[2] || '') ? '' : (dm?.[2] || ''),
+              current: /present|current/i.test(dm?.[2] || ''),
+              description: bullets.length ? bullets : nonBullets.slice(2),
             });
           }
         }
-      }
+        else if (isType(title, 'education', 'academic')) {
+          let entryLines: string[][] = [];
+          let buf: string[] = [];
+          for (const line of content) {
+            if (datePattern.test(line) && buf.length > 0) {
+              entryLines.push(buf);
+              buf = [];
+            }
+            buf.push(line);
+          }
+          if (buf.length) entryLines.push(buf);
 
-      // Education
-      if (Array.isArray(d.education)) {
-        for (const e of d.education) {
-          store.addEducation();
-          const eduList = store.cvs[id!]?.education;
-          const last = eduList?.[eduList.length - 1];
-          if (last) {
+          for (const entry of entryLines) {
+            store.addEducation();
+            const eduList = store.cvs[id!]?.education;
+            const last = eduList?.[eduList.length - 1];
+            if (!last) continue;
+
+            const dateLine = entry.find(l => datePattern.test(l)) || '';
+            const dm = dateLine.match(datePattern);
+            const bullets = entry.filter(l => /^[•\-–▪■*►◆]/.test(l)).map(l => l.replace(/^[•\-–▪■*►◆]+\s*/, ''));
+            const nonBullets = entry.filter(l => !bullets.includes(l));
+
             store.updateEducation(last.id, {
-              degree: e.degree || '', institution: e.institution || '', location: e.location || '',
-              startDate: e.startDate || '', endDate: e.endDate || '', gpa: e.gpa || '',
-              description: Array.isArray(e.description) ? e.description : [],
+              degree: nonBullets[0]?.replace(datePattern, '').trim() || '',
+              institution: nonBullets[1]?.replace(datePattern, '').trim() || '',
+              startDate: dm?.[1] || '',
+              endDate: dm?.[2] || '',
+              description: bullets,
             });
+          }
+        }
+        else if (isType(title, 'skill', 'competenc', 'technical')) {
+          // Try to detect "Category: skill1, skill2" pattern
+          for (const line of content) {
+            const colonSplit = line.split(/:\s*/);
+            store.addSkillCategory();
+            const skList = store.cvs[id!]?.skills;
+            const last = skList?.[skList.length - 1];
+            if (last) {
+              if (colonSplit.length >= 2) {
+                store.updateSkillCategory(last.id, { category: colonSplit[0], skills: colonSplit.slice(1).join(': ') });
+              } else {
+                store.updateSkillCategory(last.id, { category: 'Skills', skills: line });
+              }
+            }
+          }
+        }
+        else if (isType(title, 'project')) {
+          let entryLines: string[][] = [];
+          let buf: string[] = [];
+          for (const line of content) {
+            // New project entry: line without bullet prefix
+            if (!/^[•\-–▪■*►◆]/.test(line) && buf.length > 0) {
+              entryLines.push(buf);
+              buf = [];
+            }
+            buf.push(line);
+          }
+          if (buf.length) entryLines.push(buf);
+
+          for (const entry of entryLines) {
+            store.addProject();
+            const pList = store.cvs[id!]?.projects;
+            const last = pList?.[pList.length - 1];
+            if (!last) continue;
+            const bullets = entry.filter(l => /^[•\-–▪■*►◆]/.test(l)).map(l => l.replace(/^[•\-–▪■*►◆]+\s*/, ''));
+            store.updateProject(last.id, {
+              name: entry[0]?.replace(/^[•\-–▪■*►◆]+\s*/, '') || '',
+              description: bullets,
+            });
+          }
+        }
+        else if (isType(title, 'language')) {
+          for (const line of content) {
+            const parts = line.split(/[-–—:,]/).map(p => p.trim()).filter(Boolean);
+            store.addLanguage();
+            const lList = store.cvs[id!]?.languages;
+            const last = lList?.[lList.length - 1];
+            if (last) store.updateLanguage(last.id, { language: parts[0] || line, proficiency: parts[1] || 'Intermediate' });
+          }
+        }
+        else if (isType(title, 'certif')) {
+          for (const line of content) {
+            store.addCertification();
+            const cList = store.cvs[id!]?.certifications;
+            const last = cList?.[cList.length - 1];
+            if (last) store.updateCertification(last.id, { name: line });
           }
         }
       }
 
-      // Skills
-      if (Array.isArray(d.skills)) {
-        for (const sk of d.skills) {
-          store.addSkillCategory();
-          const skList = store.cvs[id!]?.skills;
-          const last = skList?.[skList.length - 1];
-          if (last) store.updateSkillCategory(last.id, { category: sk.category || '', skills: sk.skills || '' });
-        }
-      }
-
-      // Projects
-      if (Array.isArray(d.projects)) {
-        for (const p of d.projects) {
-          store.addProject();
-          const pList = store.cvs[id!]?.projects;
-          const last = pList?.[pList.length - 1];
-          if (last) store.updateProject(last.id, {
-            name: p.name || '', subtitle: p.subtitle || '', url: p.url || '',
-            description: Array.isArray(p.description) ? p.description : [],
-          });
-        }
-      }
-
-      // Languages
-      if (Array.isArray(d.languages)) {
-        for (const l of d.languages) {
-          store.addLanguage();
-          const lList = store.cvs[id!]?.languages;
-          const last = lList?.[lList.length - 1];
-          if (last) store.updateLanguage(last.id, { language: l.language || '', proficiency: l.proficiency || 'Intermediate' });
-        }
-      }
-
-      // Certifications
-      if (Array.isArray(d.certifications)) {
-        for (const c of d.certifications) {
-          store.addCertification();
-          const cList = store.cvs[id!]?.certifications;
-          const last = cList?.[cList.length - 1];
-          if (last) store.updateCertification(last.id, { name: c.name || '', issuer: c.issuer || '', date: c.date || '' });
-        }
-      }
-
-      // Enable sections that have data
-      const cv = store.cvs[id!];
-      if (cv) {
-        for (const sec of cv.sections) {
+      // Enable sections that got data
+      const updatedCV = store.cvs[id!];
+      if (updatedCV) {
+        for (const sec of updatedCV.sections) {
           const hasData =
-            (sec.type === 'languages' && cv.languages.length > 0) ||
-            (sec.type === 'certifications' && cv.certifications.length > 0);
+            (sec.type === 'languages' && updatedCV.languages.length > 0) ||
+            (sec.type === 'certifications' && updatedCV.certifications.length > 0) ||
+            (sec.type === 'projects' && updatedCV.projects.length > 0);
           if (hasData && !sec.visible) store.toggleSection(sec.id);
         }
       }
@@ -164,7 +249,7 @@ export const CVEditorPage = () => {
       toast.success('CV imported! Review and edit the sections.');
     } catch (err) {
       console.error(err);
-      toast.error('Upload failed');
+      toast.error('Upload failed — check your connection');
     }
     setUploading(false);
   };
