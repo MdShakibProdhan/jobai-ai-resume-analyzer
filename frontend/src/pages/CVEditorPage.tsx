@@ -53,7 +53,7 @@ export const CVEditorPage = () => {
     try {
       const res = await resumeApi.parse(file);
       const d = res.data;
-      if (!d || (!d.firstName && !d.email)) {
+      if (!d || typeof d !== 'object') {
         toast.error('Could not parse CV');
         setUploading(false);
         return;
@@ -199,7 +199,7 @@ export const CVEditorPage = () => {
         <div className="flex items-center gap-2">
           <label className="text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1 transition-colors">
             <Upload className="h-3.5 w-3.5" />
-            {uploading ? 'Uploading...' : 'Import CV'}
+            {uploading ? 'Parsing with AI...' : 'Import CV'}
             <input type="file" accept=".pdf,.docx" className="hidden" onChange={e => { if (e.target.files?.[0]) handleUploadCV(e.target.files[0]); }} />
           </label>
           <button onClick={handleExportDOCX} disabled={exporting} className="text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
