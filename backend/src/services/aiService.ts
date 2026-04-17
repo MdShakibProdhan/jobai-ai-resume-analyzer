@@ -2,8 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// Fallback model order: try primary, then fallbacks
-const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+// Fallback model order: try lighter/cheaper models first, then heavier ones
+const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash'];
 
 const getModel = (modelName: string, temp = 0.1) => genAI.getGenerativeModel({
   model: modelName,
@@ -27,7 +27,7 @@ const callWithRetry = async (prompt: string, temp: number, maxRetries = 3): Prom
       } catch (err: any) {
         const status = err?.status || err?.response?.status || 0;
         const msg = err?.message || '';
-        const isRetryable = status === 503 || status === 429 || msg.includes('503') || msg.includes('429') || msg.includes('high demand') || msg.includes('overloaded');
+        const isRetryable = status === 503 || status === 429 || msg.includes('503') || msg.includes('429') || msg.includes('high demand') || msg.includes('overloaded') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota');
 
         if (isRetryable && attempt < maxRetries - 1) {
           console.warn(`Gemini ${modelName} attempt ${attempt + 1} failed (${status}), retrying in ${(attempt + 1) * 2}s...`);
@@ -53,10 +53,6 @@ export const askGemini = async (prompt: string, temp = 0.1): Promise<any> => {
   } catch {
     return cleaned;
   }
-};
-
-const askGeminiText = async (prompt: string): Promise<string> => {
-  return callWithRetry(prompt, 0.2);
 };
 
 export interface ExtractedJobData {
