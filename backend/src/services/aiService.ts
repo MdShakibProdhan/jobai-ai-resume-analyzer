@@ -2,8 +2,11 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-const getModel = (temp = 0.1) => genAI.getGenerativeModel({
-  model: 'gemini-2.5-flash',
+// Fallback model order: try primary, then fallbacks
+const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+
+const getModel = (modelName: string, temp = 0.1) => genAI.getGenerativeModel({
+  model: modelName,
   generationConfig: {
     temperature: temp,
     topP: 0.8,
@@ -11,10 +14,39 @@ const getModel = (temp = 0.1) => genAI.getGenerativeModel({
   } as any,
 });
 
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+// Retry with exponential backoff + model fallback
+const callWithRetry = async (prompt: string, temp: number, maxRetries = 3): Promise<string> => {
+  for (const modelName of MODELS) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const model = getModel(modelName, temp);
+        const result = await model.generateContent(prompt);
+        return result.response.text();
+      } catch (err: any) {
+        const status = err?.status || err?.response?.status || 0;
+        const msg = err?.message || '';
+        const isRetryable = status === 503 || status === 429 || msg.includes('503') || msg.includes('429') || msg.includes('high demand') || msg.includes('overloaded');
+
+        if (isRetryable && attempt < maxRetries - 1) {
+          console.warn(`Gemini ${modelName} attempt ${attempt + 1} failed (${status}), retrying in ${(attempt + 1) * 2}s...`);
+          await sleep((attempt + 1) * 2000);
+          continue;
+        }
+        if (isRetryable) {
+          console.warn(`Gemini ${modelName} exhausted retries, trying next model...`);
+          break; // try next model
+        }
+        throw err; // non-retryable error
+      }
+    }
+  }
+  throw new Error('All Gemini models are currently unavailable. Please try again in a few minutes.');
+};
+
 export const askGemini = async (prompt: string, temp = 0.1): Promise<any> => {
-  const model = getModel(temp);
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
+  const text = await callWithRetry(prompt, temp);
   const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
   try {
     return JSON.parse(cleaned);
@@ -24,9 +56,7 @@ export const askGemini = async (prompt: string, temp = 0.1): Promise<any> => {
 };
 
 const askGeminiText = async (prompt: string): Promise<string> => {
-  const model = getModel(0.2);
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  return callWithRetry(prompt, 0.2);
 };
 
 export interface ExtractedJobData {
